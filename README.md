@@ -1,5 +1,5 @@
 <h1 align="center">TCA - Gerência de Campeonato</h1>
-<p align="center">Trabalho Conclusivo Anual da disciplina de Linguagem de Programação na IFPR Paranaguá</p>
+<p align="center">Trabalho Conclusivo Anual da disciplina de Linguagem de Programação no IFPR Paranaguá</p>
 
 ## 🗣 | Descrição
 
