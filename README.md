@@ -15,6 +15,11 @@ O sistema teria de cumprir as seguintes funcionalidades:
 - [x] Utilizar alocação dinâmica para criar Strings e Vetores
 - [x] Salvar os dados em arquivos texto
 
+## ⚙️ | Imagens
+
+<img width="550" height="294" alt="menu" src="https://github.com/user-attachments/assets/c32126be-8468-4619-9a0b-80f75e7754ef" />
+<img width="616" height="276" alt="criacaodeturma" src="https://github.com/user-attachments/assets/908d8497-7bc2-4b09-9aa0-e3a82d770bea" />
+<img width="618" height="656" alt="time" src="https://github.com/user-attachments/assets/8fbf9d27-cbd5-490e-89b9-fddd3d6759e7" />
 
 ## 🛠 | Tecnologias
 
