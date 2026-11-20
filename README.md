@@ -1,4 +1,4 @@
-<h1 align="center">TCA - Gerência de Campeonato</h1>
+<h1 align="center"> owl-mng </h1>
 <p align="center">Trabalho Conclusivo Anual da disciplina de Linguagem de Programação no IFPR Paranaguá</p>
 
 ## 🗣 | Descrição
