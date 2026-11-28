@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <limits.h>
+#include <time.h>
 
 #define TAM_STR 50
 
@@ -60,12 +61,6 @@ static int leCaractere(char *destino)
     if (!leLinha(linha, sizeof linha)) return 0;
     return sscanf(linha, " %c %c", destino, &extra) == 1;
 }
-
-#define LER_TEXTO(buf) do { \
-    if (!leLinha((buf), sizeof(buf))) { \
-        fprintf(stderr, "\nEntrada encerrada.\n"); exit(EXIT_FAILURE); \
-    } \
-} while (0)
 
 #define LER_INTEIRO(var) do { \
     if (!leInteiros(&(var), NULL, NULL, 1)) { \
@@ -327,14 +322,14 @@ void incializaPrograma()
 
     limpaTela();
 
-    _vetorTurmas = (TTurma *) malloc(1 * sizeof(TTurma));
+    _vetorTurmas = (TTurma *) calloc(1, sizeof(TTurma));
     if(!_vetorTurmas)
     {
         mensagensErro(0);
         exit(1);
     }
     numTurmas = 0;
-    _vetorTimes = (TTime *) malloc(1 * sizeof(TTime));
+    _vetorTimes = (TTime *) calloc(1, sizeof(TTime));
     if(!_vetorTimes)
     {
         mensagensErro(1);
@@ -615,7 +610,7 @@ enum_turma criaCurso(int selecao, int turma)
         {  
             printf("\nDigite o novo curso da turma (%s): ", _vetorTurmas[turma].nome);
         }
-        LER_TEXTO(strAux);
+        if (!leLinha(strAux, 25)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         validacao = converteEnum(strAux);
         if(validacao >= 0)
@@ -658,7 +653,7 @@ void criaNome(int selecao, char *nome, int turma, int comp)
         {  
             printf("\nDigite o novo nome/apelido da turma (%s): ", _vetorTurmas[turma].nome);
         }
-        LER_TEXTO(nome);
+        if (!leLinha(nome, 50)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         if(verificaNomeTurma(nome, comp) == 1)
         {
@@ -745,7 +740,7 @@ int perguntaTurma()
     {
         exibeTurmas();
         printf("\nSelecione a turma: ");
-        LER_TEXTO(selecao);
+        if (!leLinha(selecao, 50)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         if(verificaNomeTurma(selecao, -1) == 0)
         {
@@ -1240,7 +1235,7 @@ void criaNomeTime(char *strAux, int secao, int comp)
     while(1)
     {
         printf("\nDigite o%snome do time: ", secao == 1 ? " " : " novo ");
-        LER_TEXTO(strAux);
+        if (!leLinha(strAux, 100)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         if(verificaNomeTime(strAux, comp) == 1)
         {
@@ -1260,7 +1255,7 @@ void criaTecnico(char *strAux, int secao)
     while(1)
     {
         printf("\nDigite o%stecnico do time: ", secao == 1 ? " " : " novo ");
-        LER_TEXTO(strAux);
+        if (!leLinha(strAux, 100)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         if(verificaCaracteres(strAux) == 0)
         {
             break;
@@ -1387,7 +1382,7 @@ void criaMatricula(char *strAux)
     while(1)
     {
         printf("\nDigite a matricula do jogador: ");
-        LER_TEXTO(strAux);
+        if (!leLinha(strAux, 100)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         if(verificaCaracteres(strAux) == 0)
         {
             break;
@@ -1399,7 +1394,7 @@ void criaNomeJogador(char *strAux, int secao, TTime time, int comp)
     while(1)
     {
         printf("\nDigite o%snome do jogador: ", secao == 1 ? " " : " novo ");
-        LER_TEXTO(strAux);
+        if (!leLinha(strAux, 100)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         if(verificaJogador(strAux, time, comp) == 1)
         {
@@ -1493,7 +1488,7 @@ void criaTurmaJogador(char *str, TTime time)
         time.numTurmas < 2 ? exibeTurmas() : exibeTurmasDisponiveis(time);
 
         printf("\nDigite a turma do jogador (nome da turma): ");
-        LER_TEXTO(str);
+        if (!leLinha(str, 100)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
 
         if(verificaTurma(str, time) == 1)
@@ -1615,7 +1610,7 @@ enum_posicoes criaPosicao(TJogador *jogador, int comp)
         printf("\nPosicoes disponiveis: goleiro, ala D, ala E, fixo e pivo");
 
         printf("\nDigite a posicao do jogador: ");
-        LER_TEXTO(str);
+        if (!leLinha(str, 25)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         posicao = verificaPosicao(str);
         if(posicao != -1)
         {
@@ -1822,7 +1817,7 @@ int perguntaTime()
     {
         exibeTimes();
         printf("\nSelecione o time: ");
-        LER_TEXTO(selecao);
+        if (!leLinha(selecao, 50)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         if(verificaNomeTime(selecao, -1) == 0)
         {
@@ -2425,7 +2420,7 @@ int perguntaPosicao(TJogador jogador)
     while(1)
     {
         printf("\nSelecione a posicao: ");
-        LER_TEXTO(str);
+        if (!leLinha(str, 50)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         verificacao = verificaPosicao(str);
 
         if( verificaExistenciaPosicao(jogador, verificacao ) == 1)
@@ -2552,7 +2547,7 @@ int perguntaJogador(int time)
     {
         exibeJogadores(time);
         printf("\nSelecione o jogador: ");
-        LER_TEXTO(selecao);
+        if (!leLinha(selecao, 50)) { fprintf(stderr, "Entrada encerrada.\n"); exit(EXIT_FAILURE); }
         limpaTela();
         for(i = 0; i < _vetorTimes[time].numJogadores; i++)
         {
@@ -2676,7 +2671,7 @@ int validaAno(int ano)
         mensagensErro(4);
         return 0;
     }
-    else if(ano > 2023)
+    else if(ano > (localtime(&(time_t){time(NULL)})->tm_year + 1901))
     {
         mensagensErro(5);
         return 0;
@@ -3135,6 +3130,7 @@ void salvaTurmas()
     int i;
 
     pArq = fopen("turmas.txt", "w+");
+    if (!pArq) { perror("turmas.txt"); return; }
 
     for(i = 0; i < numTurmas; i++)
     {
@@ -3151,6 +3147,7 @@ void salvaTimes()
     int i, j, k;
 
     pArq = fopen("times.txt", "w+");
+    if (!pArq) { perror("times.txt"); return; }
     for(i = 0; i < numTimes; i++)
     {
 
@@ -3194,7 +3191,8 @@ void recuperaTurmas()
             {
                 if(c != ';')
                 {
-                    strAux[i] = c;
+                    if (i >= TAM_STR - 1) { fprintf(stderr, "Campo muito longo no arquivo de dados.\n"); exit(EXIT_FAILURE); }
+                    strAux[i] = (char)c;
                     i++;
                 }
                 else
@@ -3263,7 +3261,8 @@ void recuperaTimes()
                         {
                             if(c != '@')
                             {
-                                strAux[i] = c;
+                                if (i >= TAM_STR - 1) { fprintf(stderr, "Campo muito longo no arquivo de dados.\n"); exit(EXIT_FAILURE); }
+                                strAux[i] = (char)c;
                                 i++;
                             }
                             else
