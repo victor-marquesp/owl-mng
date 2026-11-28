@@ -4,8 +4,87 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stddef.h>
+#include <limits.h>
 
 #define TAM_STR 50
+
+// Compatibilidade de terminal e leitura de entrada no Linux.
+static void limpaTela(void)
+{
+    // Sequencia ANSI: limpa a tela e reposiciona o cursor.
+    printf("\033[2J\033[H");
+    fflush(stdout);
+}
+
+static void pausaTela(void)
+{
+    int c;
+    printf("\nPressione ENTER para continuar...");
+    fflush(stdout);
+    while ((c = getchar()) != '\n' && c != EOF) {}
+}
+
+static void descartaLinha(void)
+{
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {}
+}
+
+static int leLinha(char *destino, size_t capacidade)
+{
+    size_t tamanho;
+    if (capacidade == 0 || fgets(destino, (int)capacidade, stdin) == NULL)
+        return 0;
+    tamanho = strcspn(destino, "\n");
+    if (destino[tamanho] == '\n')
+        destino[tamanho] = '\0';
+    else if (!feof(stdin))
+        descartaLinha();
+    return 1;
+}
+
+static int leInteiros(int *a, int *b, int *c, int quantidade)
+{
+    char linha[128], extra;
+    int ok = 0;
+    if (!leLinha(linha, sizeof linha)) return 0;
+    if (quantidade == 1) ok = sscanf(linha, " %d %c", a, &extra) == 1;
+    else if (quantidade == 3) ok = sscanf(linha, " %d %d %d %c", a, b, c, &extra) == 3;
+    return ok;
+}
+
+static int leCaractere(char *destino)
+{
+    char linha[128], extra;
+    if (!leLinha(linha, sizeof linha)) return 0;
+    return sscanf(linha, " %c %c", destino, &extra) == 1;
+}
+
+#define LER_TEXTO(buf) do { \
+    if (!leLinha((buf), sizeof(buf))) { \
+        fprintf(stderr, "\nEntrada encerrada.\n"); exit(EXIT_FAILURE); \
+    } \
+} while (0)
+
+#define LER_INTEIRO(var) do { \
+    if (!leInteiros(&(var), NULL, NULL, 1)) { \
+        fprintf(stderr, "\nDigite um numero inteiro valido.\n"); \
+        (var) = -1; \
+    } \
+} while (0)
+
+#define LER_CARACTERE(var) do { \
+    if (!leCaractere(&(var))) (var) = '\0'; \
+} while (0)
+
+#define LER_DATA(d) do { \
+    if (!leInteiros(&(d).dia, &(d).mes, &(d).ano, 3)) { \
+        fprintf(stderr, "\nDigite dia mes ano (numeros inteiros).\n"); \
+        (d).dia = (d).mes = (d).ano = -1; \
+    } \
+} while (0)
+
 
 typedef struct
 {
@@ -228,8 +307,8 @@ int main(void)
     // avisos
     printf("ATENCAO - A VERSAO LINUX AINDA NAO FOI COMPLETAMENTE TESTADA\n");
     printf("EM CASO DE MAL FUNCIONAMENTO REPORTE NO GITHUB\n");
-    system("PAUSE");
-    system("cls");
+    pausaTela();
+    limpaTela();
 
     incializaPrograma();
 
@@ -246,7 +325,7 @@ void incializaPrograma()
 {
     int opcao;
 
-    system("cls");
+    limpaTela();
 
     _vetorTurmas = (TTurma *) malloc(1 * sizeof(TTurma));
     if(!_vetorTurmas)
@@ -282,14 +361,14 @@ int exibeMenu()
     printf("\n(4) - Sair");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
 int disparaMenu(int opcao)
 {  
-    int op;
+    int op = 0;
 
     if(opcao == 1)
     {
@@ -343,8 +422,7 @@ int confirmaSaida()
     while(1)
     {
         printf("\nDeseja encerrar o programa? (s/n): ");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         op = tolower(op);
 
         if(op == 's')
@@ -366,7 +444,7 @@ int menuDois(char *str)
 {
     int opcao;
 
-    printf("\n***MENU %s***\n", str == "turma" ? "TURMA" : "TIME");
+    printf("\n***MENU %s***\n", strcmp(str, "turma") == 0 ? "TURMA" : "TIME");
     printf("\n(1) - Incluir");
     printf("\n(2) - Listar");
     printf("\n(3) - Alterar");
@@ -374,8 +452,8 @@ int menuDois(char *str)
     printf("\n(5) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -391,8 +469,8 @@ int menuSalvar()
     printf("\n(2) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -402,15 +480,15 @@ void disparaMenuSalvar(int opcao)
     {
         salvamentoAutomatico = 0;
         printf("\nSALVAMENTO AUTOMÁTICO DESATIVADO!\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
     else if(opcao == 1 && salvamentoAutomatico == 0)
     {
         salvamentoAutomatico = 1;
         printf("\nSALVAMENTO AUTOMÁTICO ATIVADO!\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
     else if(opcao != 2)
     {
@@ -438,7 +516,7 @@ void salvaAutomatico(int secao)
 
 void disparaTurma(int opcao)
 {
-    int op;
+    int op = 0;
 
     if(opcao == 1)
     {
@@ -508,8 +586,8 @@ TTurma criaTurma()
     char strAux[TAM_STR];
 
     printf("\n**CRIACAO DE TURMA** - (digite os dados da turma a ser incluida)\n\n");
-    system("PAUSE");
-    system("cls");
+    pausaTela();
+    limpaTela();
 
     criaNome(1, strAux, 0, -1);
     turma.nome = (char *) malloc((strlen(strAux) + 1) * sizeof(char));
@@ -537,9 +615,8 @@ enum_turma criaCurso(int selecao, int turma)
         {  
             printf("\nDigite o novo curso da turma (%s): ", _vetorTurmas[turma].nome);
         }
-        __fpurge(stdin);
-        gets(strAux);
-        system("cls");
+        LER_TEXTO(strAux);
+        limpaTela();
         validacao = converteEnum(strAux);
         if(validacao >= 0)
         {
@@ -561,8 +638,8 @@ int criaAno(int selecao, int turma)
         {  
             printf("\nDigite o novo ano da turma (%s): ", _vetorTurmas[turma].nome);
         }
-        scanf("%i", &ano);
-        system("cls");
+        LER_INTEIRO(ano);
+        limpaTela();
         if(validaAno(ano) == 1)
         {
             return ano;
@@ -581,9 +658,8 @@ void criaNome(int selecao, char *nome, int turma, int comp)
         {  
             printf("\nDigite o novo nome/apelido da turma (%s): ", _vetorTurmas[turma].nome);
         }
-        __fpurge(stdin);
-        gets(nome);
-        system("cls");
+        LER_TEXTO(nome);
+        limpaTela();
         if(verificaNomeTurma(nome, comp) == 1)
         {
             if(verificaCaracteres(nome) == 0)
@@ -623,8 +699,8 @@ int menuListagemTurma()
     printf("\n(3) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -649,16 +725,16 @@ void listaTurmas()
     for(i = 0; i < numTurmas; i++)
     {
         listaTurma(_vetorTurmas[i]);
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
 }
 void listaUmaTurma()
 {
     int selecao = perguntaTurma();
     listaTurma(_vetorTurmas[selecao]);
-    system("PAUSE");
-    system("cls");
+    pausaTela();
+    limpaTela();
 }
 int perguntaTurma()
 {
@@ -669,9 +745,8 @@ int perguntaTurma()
     {
         exibeTurmas();
         printf("\nSelecione a turma: ");
-        __fpurge(stdin);
-        gets(selecao);
-        system("cls");
+        LER_TEXTO(selecao);
+        limpaTela();
         if(verificaNomeTurma(selecao, -1) == 0)
         {
             break;
@@ -737,8 +812,8 @@ int menuExclusao(int secao)
     printf("\n(3) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -842,8 +917,7 @@ int confirmaExclusaoTurma(int opcao)
     while(1)
     {
         printf("\nDeseja excluir %s ? (s/n): ", opcao == 1 ? "essa turma" : "todas as turmas");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         op = tolower(op);
         if(op == 's' || op == 'n')
         {
@@ -904,8 +978,8 @@ int menuAlteracaoTurma()
     printf("\n(4) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -990,8 +1064,7 @@ char confirmaAlteracao()
     while(1)
     {
         printf("\nDeseja confirmar alteracao ? (s/n): ");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         if(op == 's' || op == 'n')
         {
             return op;
@@ -1043,8 +1116,7 @@ char procedeAlteracaoNomeTurma(char *str)
         {
             printf("\nAVISO: o nome desta turma ja esta cadastrado no time %s, ", str);
             printf("deseja proceder com a alteracao ? (s/n): ");
-            __fpurge(stdin);
-            scanf("%c", &op);
+                LER_CARACTERE(op);
             op = tolower(op);
 
             if(op == 's' || op == 'n')
@@ -1075,7 +1147,7 @@ void alteraTurmaJogador(int time, char *nome)
 
 void disparaTime(int opcao)
 {
-    int op;
+    int op = 0;
 
     if(opcao == 1)
     {
@@ -1143,8 +1215,8 @@ TTime criaTime()
     char strAux[TAM_STR * 2];
 
     printf("\n**CRIACAO DE TIME** - (digite os dados do time a ser incluido)\n\n");
-    system("PAUSE");
-    system("cls");
+    pausaTela();
+    limpaTela();
 
     criaNomeTime(strAux, 1, -1);
     time.nome = (char *) malloc( ( (strlen(strAux)) + 1) * sizeof(char));
@@ -1153,10 +1225,12 @@ TTime criaTime()
     criaTecnico(strAux, 1);
     time.tecnico = (char *) malloc( ( (strlen(strAux)) + 1) * sizeof(char));
     strcpy(time.tecnico, strAux);
-    system("cls");
+    limpaTela();
 
     time.numTurmas = 0;
     time.numJogadores = 0;
+    time.turma = NULL;
+    time.jogadores = NULL;
     adicionaJogador(&time);
 
     return time;
@@ -1166,9 +1240,8 @@ void criaNomeTime(char *strAux, int secao, int comp)
     while(1)
     {
         printf("\nDigite o%snome do time: ", secao == 1 ? " " : " novo ");
-        __fpurge(stdin);
-        gets(strAux);
-        system("cls");
+        LER_TEXTO(strAux);
+        limpaTela();
         if(verificaNomeTime(strAux, comp) == 1)
         {
             if(verificaCaracteres(strAux) == 0)
@@ -1187,8 +1260,7 @@ void criaTecnico(char *strAux, int secao)
     while(1)
     {
         printf("\nDigite o%stecnico do time: ", secao == 1 ? " " : " novo ");
-        __fpurge(stdin);
-        gets(strAux);
+        LER_TEXTO(strAux);
         if(verificaCaracteres(strAux) == 0)
         {
             break;
@@ -1224,16 +1296,15 @@ void adicionaJogador(TTime *time)
         if(time->numJogadores < 10)
         {
             printf("\nDeseja adicionar outro jogador? (s/n): ");
-            __fpurge(stdin);
-            scanf("%c", &op);
+                LER_CARACTERE(op);
             op = tolower(op);
-            system("cls");
+            limpaTela();
         }
         else
         {
             printf("\nQUANTIDADE LIMITE DE JOGADORES AITNGIDA! (10)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             op = 'n';
         }
     }
@@ -1281,8 +1352,8 @@ TJogador criaJogador(TTime time)
     int turma;
 
     printf("\n**CRIACAO DE JOGADOR** - (digite os dados do jogador a ser incluida)\n\n");
-    system("PAUSE");
-    system("cls");
+    pausaTela();
+    limpaTela();
 
     criaNomeJogador(strAux, 1, time, -1);
     jogador.nome = (char *) malloc( ( (strlen(strAux)) + 1) * sizeof(char));
@@ -1305,7 +1376,7 @@ TJogador criaJogador(TTime time)
     criaMatricula(strAux);
     jogador.matricula = (char *) malloc( ( (strlen(strAux)) + 1) * sizeof(char));
     strcpy(jogador.matricula, strAux);
-    system("cls");
+    limpaTela();
 
     jogador.num_camisa = criaCamisa(1, time, -1);
 
@@ -1316,8 +1387,7 @@ void criaMatricula(char *strAux)
     while(1)
     {
         printf("\nDigite a matricula do jogador: ");
-        __fpurge(stdin);
-        gets(strAux);
+        LER_TEXTO(strAux);
         if(verificaCaracteres(strAux) == 0)
         {
             break;
@@ -1329,9 +1399,8 @@ void criaNomeJogador(char *strAux, int secao, TTime time, int comp)
     while(1)
     {
         printf("\nDigite o%snome do jogador: ", secao == 1 ? " " : " novo ");
-        __fpurge(stdin);
-        gets(strAux);
-        system("cls");
+        LER_TEXTO(strAux);
+        limpaTela();
         if(verificaJogador(strAux, time, comp) == 1)
         {
             if(verificaCaracteres(strAux) == 0)
@@ -1366,8 +1435,8 @@ TData criaData(int secao)
     while(1)
     {
         printf("\nDigite a%sdata de nascimento do jogador (D/M/A): ", secao == 1 ? " " : " nova ");
-        scanf("%i %i %i", &data.dia, &data.mes, &data.ano);
-        system("cls");
+        LER_DATA(data);
+        limpaTela();
         if(validaData(data.dia, data.mes, data.ano) == 1)
         {
             return data;
@@ -1382,8 +1451,8 @@ int criaCamisa(int secao, TTime time, int comp)
     while(1)
     {
         printf("\nDigite a%scamisa do jogador: ", secao == 1 ? " " : " nova ");
-        scanf("%i", &num_camisa);
-        system("cls");
+        LER_INTEIRO(num_camisa);
+        limpaTela();
         if(num_camisa >= 0)
         {
             if(verificaCamisa(num_camisa, time, comp))
@@ -1424,9 +1493,8 @@ void criaTurmaJogador(char *str, TTime time)
         time.numTurmas < 2 ? exibeTurmas() : exibeTurmasDisponiveis(time);
 
         printf("\nDigite a turma do jogador (nome da turma): ");
-        __fpurge(stdin);
-        gets(str);
-        system("cls");
+        LER_TEXTO(str);
+        limpaTela();
 
         if(verificaTurma(str, time) == 1)
         {
@@ -1512,8 +1580,8 @@ void adicionaPosicao(TJogador *jogador)
         else
         {
             printf("\nQUANTIDADE LIMITE DE POSICOES ATINGIDA! (5)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             break;
         }
     }
@@ -1525,15 +1593,14 @@ char confirmaPosicao()
     while(1)
     {
         printf("\nDeseja adicionar outra posicao? (s/n): ");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         op = tolower(op);
         if(op != 's' && op != 'n')
         {
             mensagensErro(20);
             continue;
         }
-        system("cls");
+        limpaTela();
 
         return op;
     }
@@ -1548,8 +1615,7 @@ enum_posicoes criaPosicao(TJogador *jogador, int comp)
         printf("\nPosicoes disponiveis: goleiro, ala D, ala E, fixo e pivo");
 
         printf("\nDigite a posicao do jogador: ");
-        __fpurge(stdin);
-        gets(str);
+        LER_TEXTO(str);
         posicao = verificaPosicao(str);
         if(posicao != -1)
         {
@@ -1631,8 +1697,8 @@ int menuListagemTime()
     printf("\n(7) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -1645,14 +1711,14 @@ void disparaListagemTime(int opcao)
         if(numTimes > 1)
         {
             listaTime(_vetorTimes[perguntaTime()]);
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
         }
         else
         {
             listaTime(_vetorTimes[0]);
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
         }
     }
     else if(opcao == 2)
@@ -1679,8 +1745,8 @@ void disparaListagemTime(int opcao)
             jogador = 0;
         }
         listaJogador(_vetorTimes[time].jogadores[jogador], jogador + 1);
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
     else if(opcao == 4)
     {
@@ -1696,8 +1762,8 @@ void disparaListagemTime(int opcao)
         for(i = 0; i < _vetorTimes[time].numJogadores; i++)
         {
             listaJogador(_vetorTimes[time].jogadores[i], (i + 1));
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
         }
     }
     else if(opcao == 5)
@@ -1713,8 +1779,8 @@ void disparaListagemTime(int opcao)
         
         listaTime(_vetorTimes[time]);
         listaJogadores(_vetorTimes[time]);
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
     else if(opcao == 6)
     {
@@ -1731,8 +1797,8 @@ void listaTimes()
     for(i = 0; i < numTimes; i++)
     {
         listaTime(_vetorTimes[i]);
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
 }
 void listaTudoTimes()
@@ -1743,8 +1809,8 @@ void listaTudoTimes()
     {
         listaTime(_vetorTimes[i]);
         listaJogadores(_vetorTimes[i]);
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
     }
 }
 int perguntaTime()
@@ -1756,9 +1822,8 @@ int perguntaTime()
     {
         exibeTimes();
         printf("\nSelecione o time: ");
-        __fpurge(stdin);
-        gets(selecao);
-        system("cls");
+        LER_TEXTO(selecao);
+        limpaTela();
         if(verificaNomeTime(selecao, -1) == 0)
         {
             break;
@@ -1900,10 +1965,9 @@ char confirmaExclusaoTime(int secao)
     while(1)
     {
         printf("\nDeseja excluir %s ? (s/n): ", secao == 1 ? "esse time" : "todos os times");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         op = tolower(op);
-        system("cls");
+        limpaTela();
         if(op == 's' || op == 'n')
         {
             return op;
@@ -1950,15 +2014,15 @@ int menuAlteracaoTime()
     printf("\n(4) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
 void disparaAlteracaoTime(int opcao, int selecao)
 {
     char strAux[TAM_STR * 2];
-    int op;
+    int op = 0;
 
     if(opcao == 1)
     {
@@ -2028,8 +2092,8 @@ int menuJogador()
     printf("\n(4) - Voltar");
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -2102,8 +2166,8 @@ int menuAlteraJogador()
 
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
@@ -2245,14 +2309,14 @@ int menuPosicao()
     printf("\n(4) - Voltar"); 
 
     printf("\n\nSelecione a opcao: ");
-    scanf("%i", &opcao);
-    system("cls");
+    LER_INTEIRO(opcao);
+    limpaTela();
 
     return opcao;
 }
 void disparaPosicao(int opcao, int time, int selecao)
 {
-    int op;
+    int op = 0;
 
     if(opcao == 1)
     {
@@ -2361,8 +2425,7 @@ int perguntaPosicao(TJogador jogador)
     while(1)
     {
         printf("\nSelecione a posicao: ");
-        __fpurge(stdin);
-        gets(str);
+        LER_TEXTO(str);
         verificacao = verificaPosicao(str);
 
         if( verificaExistenciaPosicao(jogador, verificacao ) == 1)
@@ -2394,9 +2457,8 @@ char confirmaExclusaoPosicao()
     while(1)
     {
         printf("\nDeseja excluir essa posicao ? (s/n): ");
-        __fpurge(stdin);
-        scanf("%c", &op);
-        system("cls");
+        LER_CARACTERE(op);
+        limpaTela();
         op = tolower(op);
         if(op == 's' || op == 'n')
         {
@@ -2472,8 +2534,7 @@ char confirmaExclusaoJogador()
     while(1)
     {
         printf("\nDeseja excluir esse jogador? (s/n): ");
-        __fpurge(stdin);
-        scanf("%c", &op);
+        LER_CARACTERE(op);
         op = tolower(op);
         if(op == 's' || op == 'n')
         {
@@ -2491,9 +2552,8 @@ int perguntaJogador(int time)
     {
         exibeJogadores(time);
         printf("\nSelecione o jogador: ");
-        __fpurge(stdin);
-        gets(selecao);
-        system("cls");
+        LER_TEXTO(selecao);
+        limpaTela();
         for(i = 0; i < _vetorTimes[time].numJogadores; i++)
         {
             if(strcmp(selecao, _vetorTimes[time].jogadores[i].nome) == 0)
@@ -2517,29 +2577,29 @@ int verificaCaracteres(char *str)
         if(str[i] == ';')
         {
             printf("\nO CONTEÚDO NÃO PODE CONTER (;)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             erro = 1;
         }
         else if(str[i] == '#')
         {
             printf("\nO CONTEÚDO NÃO PODE CONTER (#)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             erro = 1;
         }
         else if(str[i] == '$')
         {
             printf("\nO CONTEÚDO NÃO PODE CONTER ($)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             erro = 1;
         }
         else if(str[i] == '@')
         {
             printf("\nO CONTEÚDO NÃO PODE CONTER (@)\n");
-            system("PAUSE");
-            system("cls");
+            pausaTela();
+            limpaTela();
             erro = 1;
         }
     }
@@ -2671,230 +2731,230 @@ void mensagensErro(int erro)
     {
         case 0:
         printf("\n***ERRO 00: VETOR DE TURMAS NAO PODE SER CRIADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 1:
         printf("\n***ERRO 01: VETOR DE TIMES NAO PODE SER CRIADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 2:
         printf("\n***ERRO 02: ARQUIVO NAO PODE SER ABERTO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 3:
         printf("\n***ERRO 03: OPCAO DE MENU INVALIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 4:
         printf("\n***ERRO 04: ANO INVALIDO (menor que 2008)***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 5:
         printf("\n***ERRO 05: ANO INVALIDO (maior que 2023)***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 6:
         printf("\n***ERRO 06: CURSO INVALIDO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 7:
         printf("\n***ERRO 07: ERRO AO REALOCAR VETOR DE TURMAS***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 8:
         printf("\n***ERRO 08: TURMA SELECIONADA INEXISTENTE***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 9:
         printf("\n***ERRO 09: NAO EXISTEM TURMAS***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 10:
         printf("\n***ERRO 10: DATA INVALIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 11:
         printf("\n***ERRO 11: TURMA INVALIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 12:
         printf("\n***ERRO 12: NAO PODEM HAVER JOGADORES DE MAIS DE 2 TURMAS DIFERENTES POR TIME***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 13:
         printf("\n***ERRO 13: NUMERO DE CAMISA INVALIDO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 14:
         printf("\n***ERRO 14: ESSE NOME JA PERTENCE A OUTRA TURMA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 15:
         printf("\n***ERRO 15: ERRO AO CRIAR VETOR DE JOGADORES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 16:
         printf("\n***ERRO 16: NAO EXISTEM TIMES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 17:
         printf("\n***ERRO 17: TIME SELECIONADO INEXISTENTE***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 18:
         printf("\n***ERRO 18: NOME JA PERTENCENTE A OUTRO TIME***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 19:
         printf("\n***ERRO 19: TURMA A SER EXCLUÍDA PERTENCENTE A UM TIME***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 20:
         printf("\n***ERRO 20: OPCAO INVALIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 21:
         printf("\n***ERRO 21: ERRO AO REALOCAR VETOR DE TIMES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 22:
         printf("\n***ERRO 22: ERRO AO REALOCAR VETOR DE JOGADORES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 23:
         printf("\n***ERRO 23: DEVE HAVER APENAS UM JOGADOR***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 24:
         printf("\n***ERRO 19: UMA DAS TURMAS A SER EXCLUÍDA PERTENCENTE A UM TIME***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 25:
         printf("\n***ERRO 25: POSICAO INVALIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 26:
         printf("\n***ERRO 26: ERRO AO CRIAR VETOR DE POSICOES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 27:
         printf("\n***ERRO 27: ERRO AO REALOCAR VETOR DE POSICOES***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 28:
         printf("\n***ERRO 28: DEVE HAVER PELO MENOS UM JOGADOR***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 29:
         printf("\n***ERRO 29: JOGADOR INEXISTENTE***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 30:
         printf("\n***ERRO 30: DEVE HAVER AO MENOS UMA POSIÇÃO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 31:
         printf("\n***ERRO 31: POSICAO INEXISTENTE***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 32:
         printf("\n***ERRO 32: POSICAO INEXISTENTE NO JOGADOR***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 33:
         printf("\n***ERRO 33: NUMER MAX DE POSICOES ATINGIDO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 34:
         printf("\n***ERRO 34: NOME DO JOGADOR JA EXISTE NESTE TIME***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 35:
         printf("\n***ERRO 35: POSICAO JA EXISTE NO JOGADOR***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 36:
         printf("\n***ERRO 36: NUMERO DA CAMISA JA PERTENCE A OUTRO JOGADOR***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         default:
         printf("\n***ERRO -1: NÃO FOI POSSÍVEL ENCONTRAR O ERRO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
     }
 }
@@ -2904,92 +2964,92 @@ void mensagensSucesso(int sucesso)
     {
         case 0:
         printf("\n***SUCESSO 00: ARQUIVO RECUPERADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 1:
         printf("\n***SUCESSO 01: ARQUIVOS RECUPERADOS***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 2:
         printf("\n***SUCESSO 02: PROGRAMA INICIALIZADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 3:
         printf("\n***SUCESSO 03: TURMA ADICIONADA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 4:
         printf("\n***SUCESSO 04: TIME ADICIONADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 5:
         printf("\n***SUCESSO 05: TURMA EXCLUIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 6:
         printf("\n***SUCESSO 06: OPERACAO ABORTADA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 7:
         printf("\n***SUCESSO 07: ATRIBUTO ALTERADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 8:
         printf("\n***SUCESSO 08: TURMAS LIBERADAS***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 9:
         printf("\n***SUCESSO 09: TIMES LIBERADOS***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 10:
         printf("\n***SUCESSO 10: TIME EXCLUIDO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 11:
         printf("\n***SUCESSO 11: JOGADOR EXCLUIDO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 12:
         printf("\n***SUCESSO 12: POSICAO EXCLUIDA***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case 13:
         printf("\n***SUCESSO 13: ARQUIVO ATUALIZADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
 
         case -1:
         printf("\n***SUCESSO -1: PROGRAMA FINALIZADO***\n");
-        system("PAUSE");
-        system("cls");
+        pausaTela();
+        limpaTela();
         break;
     }
 }
@@ -3061,14 +3121,8 @@ void finalizaPrograma()
     salvaTimes();
     mensagensSucesso(13);
 
-    if(numTurmas > 0)
-    {
-        liberaTurmas();
-    }
-    if(numTimes > 0)
-    {
-        liberaTimes();
-    }
+    liberaTurmas();
+    liberaTimes();
 
     mensagensSucesso(-1);
 }
@@ -3127,7 +3181,8 @@ void recuperaTurmas()
 {
     FILE *pArq;
     int i = 0, countPV= 0;
-    char c, strAux[TAM_STR];
+    int c;
+    char strAux[TAM_STR];
 
     pArq = fopen("turmas.txt", "r");
 
@@ -3135,7 +3190,7 @@ void recuperaTurmas()
     {
         while( (c = getc(pArq) ) != EOF)
         {
-            if(c != '\n')
+            if(c != '\r' && c != '\n')
             {
                 if(c != ';')
                 {
@@ -3150,7 +3205,7 @@ void recuperaTurmas()
                     switch (countPV)
                     {
                         case 1:
-                        _vetorTurmas[numTurmas].nome = (char *) malloc(strlen(strAux + 1) * sizeof(char));
+                        _vetorTurmas[numTurmas].nome = (char *) malloc((strlen(strAux) + 1) * sizeof(char));
                         strcpy(_vetorTurmas[numTurmas].nome, strAux);
                         break;
 
@@ -3182,14 +3237,15 @@ void recuperaTurmas()
         }
     }
 
-    fclose(pArq);
+    if (pArq != NULL) fclose(pArq);
     mensagensSucesso(0);
 }
 void recuperaTimes()
 {
     FILE *pArq;
     int i = 0, countPV = 0, countArr = 0, countHash = 0, countS = 0;
-    char c, strAux[TAM_STR];
+    int c;
+    char strAux[TAM_STR];
 
     pArq = fopen("times.txt", "r");
 
@@ -3197,7 +3253,7 @@ void recuperaTimes()
     {
         while( (c = getc(pArq) ) != EOF)
         {
-            if(c != '\n')
+            if(c != '\r' && c != '\n')
             {
                 if(c != ';')
                 {
@@ -3340,7 +3396,7 @@ void recuperaTimes()
         }
     }
 
-    fclose(pArq);
+    if (pArq != NULL) fclose(pArq);
     mensagensSucesso(0);
 }
 
