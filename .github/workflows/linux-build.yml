@@ -1,0 +1,14 @@
+name: Linux build
+on:
+  push:
+    branches: [fix/linux-compatibility]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Linux version
+        run: make
+      - name: Check C syntax and warnings
+        run: make check
